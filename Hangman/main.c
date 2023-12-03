@@ -6,37 +6,43 @@
 #define MAX_WORD_LENGTH 100
 #define WORD_LIST "words.txt"
 
-// Function to select a random word of the specified length from the file
-void selectWord(char *selectedWord, int wordLength) {
-    FILE *file = fopen(WORD_LIST, "r");
+typedef struct {
+    char* selectedWord;
+    char* displayWord;
+    int wordLength;
+    int maxMisses;
+    int misses;
+} HangmanGame;
+
+void selectWord(HangmanGame* game) {
+    FILE* file = fopen(WORD_LIST, "r");
     if (file == NULL) {
-        perror("cann'ot to open the file.");
+        perror("Cannot open the file.");
         exit(1);
     }
 
     char word[MAX_WORD_LENGTH];
     int wordCount = 0;
     while (fgets(word, sizeof(word), file)) {
-        if (strlen(word) - 1 == wordLength) { // -1 to account for newline character
+        if (strlen(word) - 1 == game->wordLength) {
             wordCount++;
         }
     }
 
-    // Error handling if no words of the specified length are found
     if (wordCount == 0) {
-        printf("No words of length %d found.\n", wordLength);
+        printf("No words of length %d found.\n", game->wordLength);
         exit(1);
     }
 
     int randomIndex = rand() % wordCount;
-    rewind(file); // Reset file pointer to the beginning of the file
+    rewind(file);
 
     int currentIndex = 0;
     while (fgets(word, sizeof(word), file)) {
-        if (strlen(word) - 1 == wordLength) {
+        if (strlen(word) - 1 == game->wordLength) {
             if (currentIndex == randomIndex) {
-                strncpy(selectedWord, word, wordLength);
-                selectedWord[wordLength] = '\0'; // Ensure string is null-terminated
+                strncpy(game->selectedWord, word, game->wordLength);
+                game->selectedWord[game->wordLength] = '\0';
                 break;
             }
             currentIndex++;
@@ -47,59 +53,62 @@ void selectWord(char *selectedWord, int wordLength) {
 }
 
 int main() {
-    srand(time(NULL)); // Seed the random number generator
+    srand(time(NULL));
 
-    int wordLength, maxMisses;
+    HangmanGame game;
     printf("Enter word length: ");
-    scanf("%d", &wordLength);
-    printf("enter maximum number of misses allowed please: ");
-    scanf("%d", &maxMisses);
+    scanf("%d", &game.wordLength);
+    printf("Enter maximum number of misses allowed please: ");
+    scanf("%d", &game.maxMisses);
 
-    char selectedWord[wordLength + 1];
-    char displayWord[wordLength + 1];
-    int misses = 0;
+    game.selectedWord = (char*)malloc((game.wordLength + 1) * sizeof(char));
+    game.displayWord = (char*)malloc((game.wordLength + 1) * sizeof(char));
+
+    if (game.selectedWord == NULL || game.displayWord == NULL) {
+        fprintf(stderr, "Memory allocation failed.\n");
+        exit(1);
+    }
+
+    game.misses = 0;
     char guess;
 
-    // Select a random word of the specified length
-    selectWord(selectedWord, wordLength);
+    selectWord(&game);
 
-    // Initialize the display word with dashes
-    for (int i = 0; i < wordLength; i++) {
-        displayWord[i] = '-';
+    for (int i = 0; i < game.wordLength; i++) {
+        game.displayWord[i] = '-';
     }
-    displayWord[wordLength] = '\0'; // Null-terminate the string
+    game.displayWord[game.wordLength] = '\0';
 
-    // main game loop
-    while (misses < maxMisses) {
-        printf("Word: %s\n", displayWord);
+    while (game.misses < game.maxMisses) {
+        printf("Word: %s\n", game.displayWord);
         printf("Guess a letter: ");
         scanf(" %c", &guess);
 
-        // Check if the guess lwtter is in the word
         int found = 0;
-        for (int i = 0; i < wordLength; i++) {
-            if (selectedWord[i] == guess) {
-                displayWord[i] = guess;
+        for (int i = 0; i < game.wordLength; i++) {
+            if (game.selectedWord[i] == guess) {
+                game.displayWord[i] = guess;
                 found = 1;
             }
         }
 
         if (!found) {
-            misses++;
-            printf("Incorrect! Misses: %d\n", misses);
+            game.misses++;
+            printf("Incorrect! Misses: %d\n", game.misses);
         }
 
-        // Check if word is fully guessed
-        if (strcmp(selectedWord, displayWord) == 0) {
-            printf("Congratulations! You guessed the word: %s\n", selectedWord);
+        if (strcmp(game.selectedWord, game.displayWord) == 0) {
+            printf("Congratulations! You guessed the word: %s\n", game.selectedWord);
             break;
         }
     }
 
-    // Check if the player has exceeded the maximm number of misses
-    if (misses >= maxMisses) {
-        printf("Game Over! The word was: %s\n", selectedWord);
+    if (game.misses >= game.maxMisses) {
+        printf("Game Over! The word was: %s\n", game.selectedWord);
     }
+
+    free(game.selectedWord);
+    free(game.displayWord);
 
     return 0;
 }
