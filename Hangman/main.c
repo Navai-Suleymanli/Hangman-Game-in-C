@@ -52,14 +52,37 @@ void selectWord(HangmanGame* game) {
     fclose(file);
 }
 
+void setDifficulty(HangmanGame* game) {
+    int difficulty;
+    printf("Choose difficulty (1 = Easy, 2 = Medium, 3 = Hard): ");
+    scanf("%d", &difficulty);
+
+    switch (difficulty) {
+        case 1:  // Easy
+            game->wordLength = 5;
+            game->maxMisses = 10;
+            break;
+        case 2:  // Medium
+            game->wordLength = 7;
+            game->maxMisses = 8;
+            break;
+        case 3:  // Hard
+            game->wordLength = 9;
+            game->maxMisses = 6;
+            break;
+        default:
+            printf("Invalid choice. Setting to Easy by default.\n");
+            game->wordLength = 5;
+            game->maxMisses = 10;
+            break;
+    }
+}
+
 int main() {
     srand(time(NULL));
 
     HangmanGame game;
-    printf("Enter word length: ");
-    scanf("%d", &game.wordLength);
-    printf("Enter maximum number of misses allowed please: ");
-    scanf("%d", &game.maxMisses);
+    setDifficulty(&game);
 
     game.selectedWord = (char*)malloc((game.wordLength + 1) * sizeof(char));
     game.displayWord = (char*)malloc((game.wordLength + 1) * sizeof(char));
